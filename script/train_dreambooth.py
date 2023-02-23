@@ -476,7 +476,11 @@ def main(args):
             class_images_dir.mkdir(parents=True, exist_ok=True)
             cur_class_images = len(list(class_images_dir.iterdir()))
 
-            if cur_class_images < args.num_class_images:
+            if "num_class_images" in concept:
+                _num = concept["num_class_images"]
+            else:
+                _num = args.num_class_images
+            if cur_class_images < _num:
                 torch_dtype = torch.float16 if accelerator.device.type == "cuda" else torch.float32
                 if pipeline is None:
                     pipeline = StableDiffusionPipeline.from_pretrained(
@@ -497,7 +501,7 @@ def main(args):
                     pipeline.set_progress_bar_config(disable=True)
                     pipeline.to(accelerator.device)
 
-                num_new_images = args.num_class_images - cur_class_images
+                num_new_images = _num - cur_class_images
                 logger.info(f"Number of class images to sample: {num_new_images}.")
 
                 sample_dataset = PromptDataset(concept["class_prompt"], num_new_images)
@@ -757,23 +761,23 @@ def main(args):
             with open(os.path.join(save_dir, "args.json"), "w") as f:
                 json.dump(args.__dict__, f, indent=2)
 
-            samples
-            if args.save_sample_prompt is not None:
+            if args.prompts_list is not None:
                 pipeline = pipeline.to(accelerator.device)
                 g_cuda = torch.Generator(device=accelerator.device).manual_seed(args.seed)
                 pipeline.set_progress_bar_config(disable=True)
                 sample_dir = os.path.join(save_dir, "samples")
                 os.makedirs(sample_dir, exist_ok=True)
                 with torch.autocast("cuda"), torch.inference_mode():
-                    for i in tqdm(range(args.n_save_sample), desc="Generating samples"):
-                        images = pipeline(
-                            args.save_sample_prompt,
-                            negative_prompt=args.save_sample_negative_prompt,
-                            guidance_scale=args.save_guidance_scale,
-                            num_inference_steps=args.save_infer_steps,
-                            generator=g_cuda
-                        ).images
-                        images[0].save(os.path.join(sample_dir, f"{i}.png"))
+                    for i, prompt in enumerate(args.prompts_list):
+                        for j in tqdm(range(args.n_save_sample), desc="Generating samples"):
+                            images = pipeline(
+                                prompt,
+                                negative_prompt=args.save_sample_negative_prompt,
+                                guidance_scale=args.save_guidance_scale,
+                                num_inference_steps=args.save_infer_steps,
+                                generator=g_cuda
+                            ).images
+                            images[0].save(os.path.join(sample_dir, f"{i}_{j}.png"))
                 del pipeline
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
