@@ -101,7 +101,7 @@ def parse_args(input_args=None):
     parser.add_argument(
         "--n_save_sample",
         type=int,
-        default=4,
+        default=2,
         help="The number of samples to save.",
     )
     parser.add_argument(
