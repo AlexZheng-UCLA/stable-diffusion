@@ -255,6 +255,12 @@ def parse_args(input_args=None):
         help="Path to json containing multiple concepts, will overwrite parameters like instance_prompt, class_prompt, etc.",
     )
     parser.add_argument(
+        "--prompts_list",
+        type=str,
+        default=None,
+        help="Path to json containing multiple prompt",
+    )
+    parser.add_argument(
         "--read_prompts_from_txts",
         action="store_true",
         help="Use prompt per image. Put prompts in the same directory as images, e.g. for image.png create image.png.txt.",
@@ -751,6 +757,7 @@ def main(args):
             with open(os.path.join(save_dir, "args.json"), "w") as f:
                 json.dump(args.__dict__, f, indent=2)
 
+            samples
             if args.save_sample_prompt is not None:
                 pipeline = pipeline.to(accelerator.device)
                 g_cuda = torch.Generator(device=accelerator.device).manual_seed(args.seed)
