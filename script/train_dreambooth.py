@@ -101,7 +101,7 @@ def parse_args(input_args=None):
     parser.add_argument(
         "--n_save_sample",
         type=int,
-        default=2,
+        default=1,
         help="The number of samples to save.",
     )
     parser.add_argument(
@@ -468,6 +468,12 @@ def main(args):
     else:
         with open(args.concepts_list, "r") as f:
             args.concepts_list = json.load(f)
+    
+    if args.prompts_list is None:
+        args.prompts_list = [args.instance_prompt]
+    else:
+        with open(args.prompts_list, "r") as f:
+            args.prompts_list = json.load(f)
 
     if args.with_prior_preservation:
         pipeline = None
@@ -740,6 +746,7 @@ def main(args):
                 text_enc_model = accelerator.unwrap_model(text_encoder) #, keep_fp32_wrapper=True)
             else:
                 text_enc_model = CLIPTextModel.from_pretrained(args.pretrained_model_name_or_path, subfolder="text_encoder", revision=args.revision)
+                
             pipeline = StableDiffusionPipeline.from_pretrained(
                 args.pretrained_model_name_or_path,
                 unet=accelerator.unwrap_model(unet), #, keep_fp32_wrapper=True),
