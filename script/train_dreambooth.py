@@ -471,8 +471,6 @@ def main(args):
             args.concepts_list = json.load(f)
     
     if args.prompts_list is None:
-        args.prompts_list = [args.instance_prompt]
-    else:
         with open(args.prompts_list, "r") as f:
             args.prompts_list = json.load(f)
 
