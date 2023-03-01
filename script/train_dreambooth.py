@@ -279,11 +279,12 @@ def parse_args(input_args=None):
 
 
 class DreamBoothDataset(Dataset):
+    
     """
     A dataset to prepare the instance and class images with the prompts for fine-tuning the model.
     It pre-processes the images and the tokenizes prompts.
     """
-
+    
     def __init__(
         self,
         concepts_list,
