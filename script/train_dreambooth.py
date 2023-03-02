@@ -469,7 +469,7 @@ def main(args):
     else:
         with open(args.concepts_list, "r") as f:
             args.concepts_list = json.load(f)
-    
+        
     if args.prompts_list is None:
         with open(args.prompts_list, "r") as f:
             args.prompts_list = json.load(f)
