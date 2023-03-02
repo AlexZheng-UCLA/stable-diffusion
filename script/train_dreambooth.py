@@ -231,8 +231,9 @@ def parse_args(input_args=None):
             " *output_dir/runs/**CURRENT_DATETIME_HOSTNAME***."
         ),
     )
-    parser.add_argument("--log_interval", type=int, default=10, help="Log every N steps.")
-    parser.add_argument("--save_interval", type=int, default=10_000, help="Save weights every N steps.")
+    parser.add_argument("--log_interval", type=int, default=50, help="Log every N steps.")
+    parser.add_argument("--save_interval", type=int, default=100, help="Save weights every N steps.")
+    parser.add_argument("--only_save_steps", type=int, default=None, help="Only Save weights in these steps.")
     parser.add_argument("--save_min_steps", type=int, default=0, help="Start saving weights after N steps.")
     parser.add_argument(
         "--mixed_precision",
@@ -731,7 +732,7 @@ def main(args):
     logger.info(f"  Gradient Accumulation steps = {args.gradient_accumulation_steps}")
     logger.info(f"  Total optimization steps = {args.max_train_steps}")
 
-    def save_weights(step):
+    def save_weights(step, save_weights=True):
 
         #hack: (ethan) try to save some memory here
         import gc 
@@ -762,10 +763,12 @@ def main(args):
             pipeline.scheduler = DDIMScheduler.from_config(pipeline.scheduler.config)
             if is_xformers_available():
                 pipeline.enable_xformers_memory_efficient_attention()
+
             save_dir = os.path.join(args.output_dir, f"{step}")
-            pipeline.save_pretrained(save_dir)
-            with open(os.path.join(save_dir, "args.json"), "w") as f:
-                json.dump(args.__dict__, f, indent=2)
+            if save_weights:
+                pipeline.save_pretrained(save_dir)
+                with open(os.path.join(save_dir, "args.json"), "w") as f:
+                    json.dump(args.__dict__, f, indent=2)
 
             if args.prompts_list is not None:
                 pipeline = pipeline.to(accelerator.device)
@@ -788,6 +791,7 @@ def main(args):
                 if torch.cuda.is_available():
                     torch.cuda.empty_cache()
             print(f"[*] Weights saved at {save_dir}")
+
 
     # Only show the progress bar once on each machine.
     progress_bar = tqdm(range(args.max_train_steps), disable=not accelerator.is_local_main_process)
@@ -876,7 +880,10 @@ def main(args):
                 accelerator.log(logs, step=global_step)
 
             if global_step > 0 and not global_step % args.save_interval and global_step >= args.save_min_steps:
-                save_weights(global_step)
+                if args.only_save_steps and global_step not in args.only_save_steps:
+                    save_weights(global_step, save_weights=False)
+                else:
+                    save_weights(global_step, save_weights=True)
 
             progress_bar.update(1)
             global_step += 1
