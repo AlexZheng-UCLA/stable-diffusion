@@ -250,6 +250,12 @@ def parse_args(input_args=None):
     parser.add_argument("--hflip", action="store_true", help="Apply horizontal flip data augmentation.")
     parser.add_argument("--local_rank", type=int, default=-1, help="For distributed training: local_rank")
     parser.add_argument(
+        "--read_prompts_from_txts",
+        action="store_true",
+        help="Use prompt per image. Put prompts in the same directory as images, e.g. for image.png create image.png.txt.",
+    )
+    
+    parser.add_argument(
         "--concepts_list",
         type=str,
         default=None,
@@ -262,9 +268,10 @@ def parse_args(input_args=None):
         help="Path to json containing multiple prompt",
     )
     parser.add_argument(
-        "--read_prompts_from_txts",
-        action="store_true",
-        help="Use prompt per image. Put prompts in the same directory as images, e.g. for image.png create image.png.txt.",
+        "--steps_setting",
+        type=str,
+        default=None,
+        help="Path to json containing all step settings",
     )
 
     if input_args is not None:
@@ -474,6 +481,13 @@ def main(args):
     if args.prompts_list:
         with open(args.prompts_list, "r") as f:
             args.prompts_list = json.load(f)
+    
+    if args.steps_setting:
+        with open(args.steps_setting, "r") as f:
+            args.steps_setting = json.load(f)
+        
+        for key in args.steps_setting:
+            setattr(args, key, args.steps_setting[key])
 
     if args.with_prior_preservation:
         pipeline = None
