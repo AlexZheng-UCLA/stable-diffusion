@@ -1,3 +1,77 @@
+"""
+core modificaiton:
+    1. concept_list now can define num_class_imgs of each class
+    2. use prompts_list to sample model on multiple prompts
+    3. use steps_setting to define all steps related args, now can define which steps to save weights
+
+*******************************************************
+template for concept_list
+
+concepts_list = [
+
+    {
+       "instance_prompt":       token,
+       "class_prompt":          class_prompt_list[0],
+       "instance_data_dir":     instance_dir_list[0],
+       "class_data_dir":        class_dir_list[0],
+       "num_class_images":     num_class_images[0]
+    },
+    
+    {
+       "instance_prompt":       token,
+       "class_prompt":          class_prompt_list[1],
+       "instance_data_dir":     instance_dir_list[1],
+       "class_data_dir":        class_dir_list[1],
+       "num_class_images":     num_class_images[1]
+    },
+
+]
+*******************************************************
+template for prompts_list
+
+prompts_list = [f"{token} clothed in armor",
+                f"{token} with white wings",
+               ]
+
+*******************************************************
+template for steps_setting
+
+steps_setting = {
+    "max_train_steps": 800,
+    "lr_warmup_steps": 100,
+    "save_min_steps":0, 
+    "save_interval": 200,
+    "only_save_steps": [600, 800]
+  }
+
+template for training
+
+!accelerate launch train_dreambooth.py \
+--pretrained_model_name_or_path=$MODEL_NAME \
+--pretrained_vae_name_or_path=$VAE_NAME \
+--output_dir=$OUTPUT_DIR \
+--revision="fp16" \
+--with_prior_preservation \
+--prior_loss_weight=1.0 \
+--seed=1337 \
+--resolution=512 \
+--train_batch_size=1 \
+--mixed_precision="fp16" \
+--use_8bit_adam \
+--gradient_accumulation_steps=1 \
+--gradient_checkpointing \
+--learning_rate=1.5e-6 \
+--lr_scheduler="polynomial" \
+--num_class_images=120 \
+--sample_batch_size=4 \
+--train_text_encoder \
+--concepts_list="concepts_list.json" \
+--prompts_list="prompts_list.json" \
+--steps_setting="steps_setting.json" \
+--n_save_sample=2 \
+--read_prompts_from_txts 
+
+"""
 import argparse
 import hashlib
 import itertools
