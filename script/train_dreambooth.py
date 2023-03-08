@@ -37,6 +37,7 @@ prompts_list = [f"{token} clothed in armor",
 template for steps_setting
 
 steps_setting = {
+    "learning_rates": 5e-7,
     "max_train_steps": 800,
     "lr_warmup_steps": 100,
     "save_min_steps":0, 
