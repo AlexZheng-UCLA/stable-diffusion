@@ -3,48 +3,54 @@
 # ******************************************************************************************************
 ## Main Settings
 
+
+
 # directory 
-dir_name = "chenweiting_512_66_DA_combined_1"
-project_name = "chenweiting"
-data_name = "chenweiting/chenweiting-512"
+dir_name = "redscarf-512-50x2-Lion"
+project_name = "redscarf"
+data_name = "redscarfsnow"
 
 # model
-training_ckpt = "/home/ubuntu/stable-diffusion-webui/models/Stable-diffusion/hassanblend14.safetensors"
-inference_ckpt = "/home/ubuntu/stable-diffusion-webui/models/Stable-diffusion/hassanblend14.safetensors"
+training_ckpt = "/home/ubuntu/stable-diffusion-webui/models/Stable-diffusion/v1-5-pruned.safetensors"
+# training_ckpt = "/home/ubuntu/stable-diffusion-webui/models/Stable-diffusion/hassanblend14.safetensors"
+# training_ckpt = "/home/ubuntu/stable-diffusion-webui/models/Stable-diffusion/chilloutmix_NiPrunedFp32Fix.safetensors"
 vae = "/home/ubuntu/stable-diffusion-webui/models/VAE/vae-ft-mse-840000-ema-pruned.ckpt"  
 
 # dataset
-instance_token = "chenweiting" 
-class_token = "man"  
-add_token_to_caption = False
-resolution = 512  
-flip_aug = False 
-data_anotation = "combined"  # @param ["none", "waifu", "blip", "combined"]
-caption_extension = ".combined"  # @param ["none", ".txt", ".caption", "combined"]
+instance_token = "REDSCARF" 
+class_token = ""  
+add_token_to_caption = True
+resolution = 512
+flip_aug = True 
+data_anotation = "waifu"  # @param ["none", "waifu", "blip", "combined"]
+caption_extension = ".txt"  # @param ["none", ".txt", ".caption", "combined"]
 
 # training 
-train_repeats = 66  
+train_repeats = 50
 reg_repeats = 0
-num_epochs = 1  # @param {type:"number"}
-train_batch_size = 2  # @param {type:"number"}
-network_dim = 64  
-network_alpha = 64
+num_epochs = 2  # @param {type:"number"}
+train_batch_size = 4  # @param {type:"number"}
+network_dim = 128  
+network_alpha = 128
 save_n_epochs_type = "save_every_n_epochs"  # @param ["save_every_n_epochs", "save_n_epoch_ratio"]
 save_n_epochs_type_value = 1  # @param {type:"number"}
 lr_scheduler = "polynomial"  #@param ["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "adafactor"]
-lowram = False 
+lowram = False
 
 # sampling
 sampler = "k_dpm_2"  # @param ["ddim", "pndm", "lms", "euler", "euler_a", "heun", "dpm_2", "dpm_2_a", "dpmsolver","dpmsolver++", "dpmsingle", "k_lms", "k_euler", "k_euler_a", "k_dpm_2", "k_dpm_2_a"]
-sample_str = f"""
-  masterpiece, best quality, 1boy, black eyes, white shirt, hat, looking at viewer, shirt, solo, upper body\
-  --n lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry \
-  --w 512 \
-  --h 512 \
-  --l 7 \
-  --s 28    
-"""
-images_per_prompt = 4
+prompts = [
+    "1 person",
+    "1 dog",
+    "1 cat",
+]
+scale = 7  # @param {type: "slider", min: 1, max: 40}
+sampler = "k_dpm_2"  # @param ["ddim", "pndm", "lms", "euler", "euler_a", "heun", "dpm_2", "dpm_2_a", "dpmsolver","dpmsolver++", "dpmsingle", "k_lms", "k_euler", "k_euler_a", "k_dpm_2", "k_dpm_2_a"]
+steps = 28  # @param {type: "slider", min: 1, max: 100}
+# precision = "fp16"  # @param ["fp16", "bf16"] {allow-input: false}
+width = 512  # @param {type: "integer"}
+height = 512  # @param {type: "integer"}
+images_per_prompt = 1  # @param {type: "integer"}
 
 # ******************************************************************************************
 # ## Other Settings
@@ -58,12 +64,17 @@ caption_dropout_rate = 0  # @param {type:"slider", min:0, max:1, step:0.05}
 caption_dropout_every_n_epochs = 0  
 keep_tokens = 0  
 
+# waifu
+undesired_tags = "solo,snow,snowing,scarf,red scarf,cape,red cape"
+general_threshold = 0.3 #@param {type:"slider", min:0, max:1, step:0.05}
+character_threshold = 0.5 #@param {type:"slider", min:0, max:1, step:0.05}
+
 # training
-optimizer_type = "DAdaptation"  # @param ["AdamW", "AdamW8bit", "Lion", "SGDNesterov", "SGDNesterov8bit", "DAdaptation", "AdaFactor"]
+optimizer_type = "Lion"  # @param ["AdamW", "AdamW8bit", "Lion", "SGDNesterov", "SGDNesterov8bit", "DAdaptation", "AdaFactor"]
 train_unet = True  
-unet_lr = 1  
+unet_lr = 1e-4  
 train_text_encoder = True
-text_encoder_lr = 0.5
+text_encoder_lr = 4e-5
 prior_loss_weight = 1.0
 # @markdown Additional arguments for optimizer, e.g: `["decouple=true","weight_decay=0.6"]`
 optimizer_args = ""  # @param {'type':'string'}
@@ -74,14 +85,16 @@ lr_warmup_steps = 0
 noise_offset = 0.0  # @param {type:"number"}
 
 # sample 
-enable_sample_prompt = True  
+enable_sample_prompt = True 
+pre = "masterpiece, best quality" 
+negative = "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry"  
+clip_skip = None
 
 # 
 mixed_precision = "fp16"  # @param ["no","fp16","bf16"]
 save_precision = "fp16"  # @param ["float", "fp16", "bf16"] 
 save_model_as = "safetensors"  # @param ["ckpt", "pt", "safetensors"] {allow-input: false}
 max_token_length = 225  # @param {type:"number"}
-clip_skip = 1  # @param {type:"number"}
 gradient_checkpointing = False  # @param {type:"boolean"}
 gradient_accumulation_steps = 1  # @param {type:"number"}
 seed = -1  # @param {type:"number"}
@@ -95,11 +108,19 @@ import toml
 import concurrent.futures
 from tqdm import tqdm
 from PIL import Image
-import time
+import torch
 import subprocess
 from subprocess import getoutput
 from accelerate.utils import write_basic_config
 
+import torch
+
+print("Torch version:", torch.__version__)
+print("CUDA available:", torch.cuda.is_available())
+print("cuDNN version:", torch.backends.cudnn.version())
+print("cuDNN enabled:", torch.backends.cudnn.enabled)
+
+# **************************************************************************************************
 repo_dir = os.path.join(root_dir, "kohya-trainer")
 training_dir = os.path.join(root_dir, dir_name)
 dataset_dir = os.path.join(root_dir, "dataset", data_name)
@@ -126,27 +147,6 @@ for dir in [
     ]:
     os.makedirs(dir, exist_ok=True)
 
-# for store in [
-#     "root_dir",
-#     "repo_dir",
-#     "training_dir",
-#     "train_data_dir",
-#     "reg_data_dir",
-#     "accelerate_config",
-#     "tools_dir",
-#     "finetune_dir",
-#     "config_dir",
-#     "sample_dir",
-#     "logging_dir",
-#     "inference_dir",
-#     "training_ckpt",
-#     "inference_ckpt",
-#     "vae"
-# ]:
-#     with capture.capture_output() as cap:
-#         get_ipython().run_line_magic('store', '{store}')
-#         del cap
-
 if not os.path.exists(accelerate_config):
     write_basic_config(save_location=accelerate_config)
 
@@ -161,7 +161,7 @@ supported_types = [
     ".webp",
     ".bmp",
     ".caption",
-    ".combined"
+    ".combined",
     ".npz",
     ".txt",
     ".json",
@@ -263,7 +263,6 @@ if data_anotation == "blip" or data_anotation == "combined":
     subprocess.run(command, shell=True, check=True)
 
 # 4.2.2. Waifu Diffusion 1.4 Tagger V2
-import os
 
 if data_anotation == "waifu" or data_anotation == "combined":
     os.chdir(finetune_dir)
@@ -276,10 +275,6 @@ if data_anotation == "waifu" or data_anotation == "combined":
     #@markdown Debug while tagging, it will print your image file with general tags and character tags.
     verbose_logging = False #@param {type:"boolean"}
     #@markdown Separate `undesired_tags` with comma `(,)` if you want to remove multiple tags, e.g. `1girl,solo,smile`.
-    undesired_tags = "" #@param {type:'string'}
-    #@markdown  Adjust `general_threshold` for pruning tags (less tags, less flexible). `character_threshold` is useful if you want to train with character tags, e.g. `hakurei reimu`.
-    general_threshold = 0.15 #@param {type:"slider", min:0, max:1, step:0.05}
-    character_threshold = 0.15 #@param {type:"slider", min:0, max:1, step:0.05}
 
     config = {
         "_train_data_dir": train_data_dir,
@@ -317,42 +312,41 @@ if data_anotation == "waifu" or data_anotation == "combined":
 # ### Combine BLIP and Waifu
 
 # os.chdir(train_data_dir)
+if data_anotation == "combined":
+    def read_file_content(file_path):
+        with open(file_path, "r") as file:
+            content = file.read()
+        return content
 
-def read_file_content(file_path):
-    with open(file_path, "r") as file:
-        content = file.read()
-    return content
+    def remove_redundant_words(content1, content2):
+        return content1.rstrip('\n') + ', ' + content2
 
-def remove_redundant_words(content1, content2):
-    return content1.rstrip('\n') + ', ' + content2
+    def write_file_content(file_path, content):
+        with open(file_path, "w") as file:
+            file.write(content)
 
-def write_file_content(file_path, content):
-    with open(file_path, "w") as file:
-        file.write(content)
+    def combine():
+        directory = train_data_dir
+        extension1 = ".caption"
+        extension2 = ".txt"
+        output_extension = ".combined"
 
-def main():
-    directory = train_data_dir
-    extension1 = ".caption"
-    extension2 = ".txt"
-    output_extension = ".combined"
+        for file in os.listdir(directory):
+            if file.endswith(extension1):
+                filename = os.path.splitext(file)[0]
+                file1 = os.path.join(directory, filename + extension1)
+                file2 = os.path.join(directory, filename + extension2)
+                output_file = os.path.join(directory, filename + output_extension)
 
-    for file in os.listdir(directory):
-        if file.endswith(extension1):
-            filename = os.path.splitext(file)[0]
-            file1 = os.path.join(directory, filename + extension1)
-            file2 = os.path.join(directory, filename + extension2)
-            output_file = os.path.join(directory, filename + output_extension)
+                if os.path.exists(file2):
+                    content1 = read_file_content(file1)
+                    content2 = read_file_content(file2)
 
-            if os.path.exists(file2):
-                content1 = read_file_content(file1)
-                content2 = read_file_content(file2)
+                    combined_content = remove_redundant_words(content1, content2)
 
-                combined_content = remove_redundant_words(content1, content2)
+                    write_file_content(output_file, combined_content)
 
-                write_file_content(output_file, combined_content)
-
-
-main()
+    combine()
 
 
 # ## Training Model
@@ -374,6 +368,17 @@ def write_file(filename, contents):
 
 def add_tag(filename, tag):
     contents = read_file(filename)
+    # move the "cat" or "dog" to the beginning of the contents
+    if "cat" in contents:
+        contents = contents.replace("cat, ", "")
+        contents = contents.replace(", cat", "")
+        contents = "cat, " + contents
+    if "dog" in contents:
+        contents = contents.replace("dog, ", "")
+        contents = contents.replace(", dog", "")
+        contents = "dog, " + contents
+
+    # add the tag
     tag = ", ".join(tag.split())
     tag = tag.replace("_", " ")
     if tag in contents:
@@ -391,10 +396,12 @@ def delete_tag(filename, tag):
     write_file(filename, contents)
 
 if caption_extension != "none":
+
     tag = f"{instance_token}_{class_token}" if 'class_token' in globals() else instance_token
     for filename in os.listdir(train_data_dir):
         if filename.endswith(caption_extension):
             file_path = os.path.join(train_data_dir, filename)
+
             if add_token_to_caption:
                 add_tag(file_path, tag)
             else:
@@ -594,17 +601,17 @@ config = {
         "gradient_checkpointing": gradient_checkpointing,
         "gradient_accumulation_steps": gradient_accumulation_steps,
         "mixed_precision": mixed_precision,
-        "clip_skip": clip_skip if not v2 else None,
         "logging_dir": logging_dir,
         "log_prefix": project_name,
         "noise_offset": noise_offset if noise_offset > 0 else None,
         "lowram": lowram,
+        "clip_skip": clip_skip,
     },
     "sample_prompt_arguments": {
         "sample_every_n_steps": None,
         "sample_every_n_epochs": 1 if enable_sample_prompt else 999999,
         "sample_sampler": sampler,
-        "images_per_prompt": images_per_prompt,
+        # "images_per_prompt": images_per_prompt,
     },
     "dreambooth_arguments": {
         "prior_loss_weight": 1.0,
@@ -632,7 +639,19 @@ def write_file(filename, contents):
         f.write(contents)
 
 write_file(config_path, config_str)
-write_file(prompt_path, sample_str)
+
+final_prompts = []
+for prompt in prompts:
+    final_prompts.append(
+    f"{instance_token}, {pre}, {prompt} --n {negative} --w {width} --h {height} --l {scale} --s {steps}"
+    if add_token_to_caption
+    else f"{pre}, {prompt} --n {negative} --w {width} --h {height} --l {scale} --s {steps}"
+    )
+with open(prompt_path, 'w') as file:
+    # Write each string to the file on a new line
+    for string in final_prompts:
+        for i in range(images_per_prompt):
+            file.write(string + '\n')
     
 print(config_str)
 
