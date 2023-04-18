@@ -3,6 +3,45 @@
 # ******************************************************************************************************
 ## Main Settings
 
+# def a class to contain all the following code
+class LoRA_training:
+    def __init__(self):
+        # directory 
+        self.dir_name = "redscarf-512-100-DA"
+        self.data_name = "redscarfsnow"
+
+        # dataset
+        self.instance_token = "" 
+        self.class_token = ""  
+        self.add_token_to_caption = False
+        self.resolution = 512
+        self.flip_aug = True 
+        self.data_anotation = "waifu"  # @param ["none", "waifu", "blip", "combined"]
+        self.caption_extension = ".txt"  # @param ["none", ".txt", ".caption", "combined"]
+
+        # training
+        self.train_repeats = 100
+        self.reg_repeats = 0
+        self.num_epochs = 2  # @param {type:"number"}
+        self.train_batch_size = 4  # @param {type:"number"}
+        self.network_dim = 128
+        self.network_alpha = 128
+        self.save_n_epochs_type = "save_every_n_epochs"  # @param ["save_every_n_epochs", "save_n_epoch_ratio"]
+        self.save_n_epochs_type_value = 1  # @param {type:"number"}
+        self.lr_scheduler = "polynomial"  #@param ["polynomial", "cosine", "linear", "constant"]
+        self.lowres = False
+
+        # sampling
+        self.sampler
+        self.sample_repeats = 1
+
+    def run(self):
+        # ******************************************************************************************
+        # ## Setup
+
+
+
+
 
 
 # directory 
