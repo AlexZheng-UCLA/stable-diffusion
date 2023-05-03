@@ -1,0 +1,12 @@
+dadaptation @ git+https://github.com/facebookresearch/dadaptation.git@3d971da3e92e4ddd6978b7390c91ecf1d74157d0
+diffusers==0.14
+nvitop==0.9.0
+accelerate
+opencv-python==4.6.0.66
+safetensors==0.2.5
+tensorboard
+tensorflow
+toml==0.10.2
+transformers
+protobuf==3.20.3 
+albumentations
