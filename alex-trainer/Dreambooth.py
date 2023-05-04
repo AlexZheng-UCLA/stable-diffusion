@@ -15,88 +15,54 @@ from subprocess import getoutput
 from accelerate.utils import write_basic_config
 
 # define class Dreambooth
-class Lora():
-    def __init__(
-        self, 
+class Dreambooth():
+    def __init__(self, **kwargs):
 
-        # project           
-        dir_name,
-        data_name,
+        self.dir_name = kwargs.get("dir_name", "default")
+        self.data_name = kwargs.get("data_name", "")
+        self.sd_path = kwargs.get("sd_path", "/root/autodl-fs/webui_models/Stable-diffusion/v1-5-pruned-emaonly.safetensors")
+        self.resume_path = kwargs.get("resume_path", "")
+        self.v2 = kwargs.get("v2", False)
+        self.instance_token = kwargs.get("instance_token", "")
+        self.class_token = kwargs.get("class_token", "")
+        self.train_repeats = kwargs.get("train_repeats", 10)
+        self.reg_repeats = kwargs.get("reg_repeats", 1)
+        self.max_train_steps = kwargs.get("max_train_steps", 200)
+        self.save_n_epoch_ratio = kwargs.get("save_n_epoch_ratio", 1)
+        self.prompts = kwargs.get("prompts", None)
+        self.sample_every_n_steps = kwargs.get("sample_every_n_steps", 100)
+        self.images_per_prompt = kwargs.get("images_per_prompt", 1)
+        self.optimizer_type = kwargs.get("optimizer_type", "DAdaptation")
+        self.learning_rate = kwargs.get("learning_rate", 1)
+        self.prior_loss_weight = kwargs.get("prior_loss_weight", 1)
+        self.resolution = kwargs.get("resolution", 512)
 
-        # path
-        sd_path,
-        resume_path="",
-        v2=False,
-
-        # dataset
-        instance_token=None,
-        class_token=None,
-
-        # network 
-        network_dim = 128, 
-        network_alpha = 64,
-        train_unet = True,
-        train_text_encoder = True,
-
-        # training 
-        train_repeats = 10,
-        reg_repeats = 1,
-        num_epochs = 1,
-        optimizer_type = "DAdaptation",  # @param ["AdamW", "AdamW8bit", "Lion", "SGDNesterov", "SGDNesterov8bit", "DAdaptation", "AdaFactor"]
-        unet_lr = 1,
-        text_encoder_lr = 0.5,
-        prior_loss_weight = 1.0,
-
-        # sampling
-        prompts = None,
-        sample_every_n_steps = 100,
-        images_per_prompt = 1,
-    ):
-
-        self.dir_name = dir_name
-        self.data_name = data_name
-        self.sd_path = sd_path
-        self.resume_path = resume_path
-        self.v2 = v2
-        self.instance_token = instance_token
-        self.class_token = class_token
-        self.train_repeats = train_repeats
-        self.reg_repeats = reg_repeats
-        self.num_epochs = num_epochs
-        self.network_dim = network_dim
-        self.network_alpha = network_alpha
-        self.train_unet = train_unet
-        self.train_text_encoder = train_text_encoder
-        self.unet_lr = unet_lr
-        self.text_encoder_lr = text_encoder_lr
-        self.prompts = prompts
-        self.images_per_prompt = images_per_prompt
-        self.optimizer_type = optimizer_type
-        self.prior_loss_weight = prior_loss_weight
-
-        self.project_name = dir_name
+        self.project_name = self.dir_name
         self.vae_path = "/root/autodl-tmp/webui_models/VAE/vae-ft-mse-840000-ema-pruned.safetensors"
         self.blip_path = "/root/autodl-tmp/webui_models/BLIP/model_large_caption.pth"
 
 
         self.add_token_to_caption = True
-        self.resolution = 512
         self.flip_aug = True
         self.clip_skip = 1 
+        self.keep_tokens = 0
+        self.caption_extension = ".txt"
 
 
-        self.train_batch_size = 4
-        self.lowram = False
+        self.train_batch_size = 1
         self.lr_scheduler = "polynomial"  #@param ["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "adafactor"]
 
-        self.root_dir = "/root/alex-sd-training"
+        self.root_dir = "/root/alex-trainer"
         self.output_dir = "/root/autodl-tmp/training-outputs"
         self.save_model_dir = "/root/autodl-fs/webui_models/Stable-diffusion"
         self.v_parameterization = False
 
+        self.caption_dropout_rate = 0
+        self.caption_dropout_every_n_epochs = 0
+
         self.repo_dir = os.path.join(self.root_dir, "kohya-trainer")
-        self.training_dir = os.path.join(self.output_dir, dir_name)
-        self.dataset_dir = os.path.join(self.root_dir, "dataset", data_name)
+        self.training_dir = os.path.join(self.output_dir, self.dir_name)
+        self.dataset_dir = os.path.join(self.root_dir, "dataset", self.data_name)
         self.train_data_dir = os.path.join(self.training_dir, "train_data")
         self.reg_data_dir = os.path.join(self.training_dir, "reg_data")
         self.config_dir = os.path.join(self.training_dir, "config")
@@ -118,7 +84,8 @@ class Lora():
             ]:
             os.makedirs(dir, exist_ok=True)
 
-        shutil.copytree(self.dataset_dir, self.train_data_dir, dirs_exist_ok=True)
+        if self.data_name != "":
+            shutil.copytree(self.dataset_dir, self.train_data_dir, dirs_exist_ok=True)
         if not os.path.exists(self.accelerate_config):
             write_basic_config(save_location=self.accelerate_config)
 
@@ -149,9 +116,6 @@ class Lora():
     def prepare(self,
                 
         data_anotation = "combined",  # @param ["none", "waifu", "blip", "combined"]
-        # dataset
-        caption_dropout_rate = 0,  # @param {type:"slider", min:0, max:1, step:0.05}
-        caption_dropout_every_n_epochs = 0,  
 
         # waifu
         undesired_tags = "",
@@ -160,10 +124,6 @@ class Lora():
 
     ):
         self.data_anotation = data_anotation
-        self.caption_extension = ".txt"
-        self.caption_dropout_rate = caption_dropout_rate
-        self.caption_dropout_every_n_epochs = caption_dropout_every_n_epochs
-        self.keep_tokens = 0
         self.undesired_tags = undesired_tags
         self.general_threshold = general_threshold
         self.character_threshold = character_threshold
@@ -246,7 +206,7 @@ class Lora():
             min_length = 5 #@param {type:"slider", min:0, max:100, step:5.0}
             max_length = 75 #@param {type:"slider", min:0, max:100, step:5.0}
 
-            command = f'''python make_captions.py "{self.train_data_dir}" --caption_weights {self.blip_path} --batch_size {batch_size} {"--beam_search" if beam_search else ""} --min_length {min_length} --max_length {max_length} --caption_extension .caption --max_data_loader_n_workers {max_data_loader_n_workers}'''
+            command = f'''python make_captions.py "{self.train_data_dir}" --caption_weights {self.blip_path} --batch_size {batch_size} {"--beam_search" if beam_search else ""} --min_length {min_length} --max_length {max_length} --caption_extension .txt --max_data_loader_n_workers {max_data_loader_n_workers}'''
             subprocess.run(command, shell=True, check=True)
 
         # 4.2.2. Waifu Diffusion 1.4 Tagger V2
@@ -295,73 +255,41 @@ class Lora():
 
         # ### Combine BLIP and Waifu
 
-        if data_anotation == "combined":
-            def read_file_content(file_path):
-                with open(file_path, "r") as file:
-                    content = file.read()
-                return content
+        # if data_anotation == "combined":
+        #     def read_file_content(file_path):
+        #         with open(file_path, "r") as file:
+        #             content = file.read()
+        #         return content
 
-            def remove_redundant_words(content1, content2):
-                return content1.rstrip('\n') + ', ' + content2
+        #     def remove_redundant_words(content1, content2):
+        #         return content1.rstrip('\n') + ', ' + content2
 
-            def write_file_content(file_path, content):
-                with open(file_path, "w") as file:
-                    file.write(content)
+        #     def write_file_content(file_path, content):
+        #         with open(file_path, "w") as file:
+        #             file.write(content)
 
-            def combine():
-                directory = self.train_data_dir
-                extension1 = ".caption"
-                extension2 = ".txt"
-                output_extension = ".combined"
+        #     def combine():
+        #         directory = self.train_data_dir
+        #         extension1 = ".caption"
+        #         extension2 = ".txt"
+        #         output_extension = ".combined"
 
-                for file in os.listdir(directory):
-                    if file.endswith(extension1):
-                        filename = os.path.splitext(file)[0]
-                        file1 = os.path.join(directory, filename + extension1)
-                        file2 = os.path.join(directory, filename + extension2)
-                        output_file = os.path.join(directory, filename + output_extension)
+        #         for file in os.listdir(directory):
+        #             if file.endswith(extension1):
+        #                 filename = os.path.splitext(file)[0]
+        #                 file1 = os.path.join(directory, filename + extension1)
+        #                 file2 = os.path.join(directory, filename + extension2)
+        #                 output_file = os.path.join(directory, filename + output_extension)
 
-                        if os.path.exists(file2):
-                            content1 = read_file_content(file1)
-                            content2 = read_file_content(file2)
+        #                 if os.path.exists(file2):
+        #                     content1 = read_file_content(file1)
+        #                     content2 = read_file_content(file2)
 
-                            combined_content = remove_redundant_words(content1, content2)
+        #                     combined_content = remove_redundant_words(content1, content2)
 
-                            write_file_content(output_file, combined_content)
+        #                     write_file_content(output_file, combined_content)
 
-            combine()
-
-
-    def train(self,
-    ):
-        
-        lr_scheduler_num_cycles = 0  # @param {'type':'number'}
-        lr_scheduler_power = 1 
-        lr_warmup_steps = 0 
-        noise_offset = 0.0  # @param {type:"number"}
-
-        save_n_epochs_type = "save_every_n_epochs"  # @param ["save_every_n_epochs", "save_n_epoch_ratio"]
-        save_n_epochs_type_value = 1  # @param {type:"number"}
-
-        # sample 
-        enable_sample_prompt = True
-        scale = 7  # @param {type: "slider", min: 1, max: 40}
-        sampler = "ddim"  # @param ["ddim", "pndm", "lms", "euler", "euler_a", "heun", "dpm_2", "dpm_2_a", "dpmsolver","dpmsolver++", "dpmsingle", "k_lms", "k_euler", "k_euler_a", "k_dpm_2", "k_dpm_2_a"]
-        steps = 28  # @param {type: "slider", min: 1, max: 100}
-        # precision = "fp16"  # @param ["fp16", "bf16"] {allow-input: false}
-        width = 512  # @param {type: "integer"}
-        height = 512  # @param {type: "integer"}
-        pre = "masterpiece, best quality" 
-        negative = "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry"  
-
-        # 
-        mixed_precision = "fp16"  # @param ["no","fp16","bf16"]
-        save_precision = "fp16"  # @param ["float", "fp16", "bf16"] 
-        save_model_as = "safetensors"  # @param ["ckpt", "safetensors", "diffusers", "diffusers_safetensors"] {allow-input: false}
-        max_token_length = 225  # @param {type:"number"}
-        gradient_checkpointing = False  # @param {type:"boolean"}
-        gradient_accumulation_steps = 1  # @param {type:"number"}
-        seed = -1  # @param {type:"number"}
+        #     combine()
 
         if self.add_token_to_caption and self.keep_tokens < 2:
             self.keep_tokens = 1
@@ -416,6 +344,38 @@ class Lora():
                     else:
                         delete_tag(file_path, tag)
 
+    def train(self,
+    ):
+        
+        lr_scheduler_num_cycles = 0  # @param {'type':'number'}
+        lr_scheduler_power = 1 
+        lr_warmup_steps = 0 
+        noise_offset = 0.0  # @param {type:"number"}
+
+        # sample 
+        enable_sample_prompt = True
+        scale = 7  # @param {type: "slider", min: 1, max: 40}
+        sampler = "ddim"  # @param ["ddim", "pndm", "lms", "euler", "euler_a", "heun", "dpm_2", "dpm_2_a", "dpmsolver","dpmsolver++", "dpmsingle", "k_lms", "k_euler", "k_euler_a", "k_dpm_2", "k_dpm_2_a"]
+        steps = 28  # @param {type: "slider", min: 1, max: 100}
+        # precision = "fp16"  # @param ["fp16", "bf16"] {allow-input: false}
+        width = 512  # @param {type: "integer"}
+        height = 512  # @param {type: "integer"}
+        pre = "masterpiece, best quality" 
+        negative = "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry"  
+
+        # 
+        mixed_precision = "fp16"  # @param ["no","fp16","bf16"]
+        save_precision = "fp16"  # @param ["float", "fp16", "bf16"] 
+        save_model_as = "safetensors"  # @param ["ckpt", "safetensors", "diffusers", "diffusers_safetensors"] {allow-input: false}
+        max_token_length = 225  # @param {type:"number"}
+        gradient_checkpointing = False  # @param {type:"boolean"}
+        gradient_accumulation_steps = 1  # @param {type:"number"}
+        seed = -1  # @param {type:"number"}
+
+
+        if self.add_token_to_caption and self.keep_tokens < 2:
+            self.keep_tokens = 1
+            
         config = {
             "general": {
                 "enable_bucket": True,
@@ -476,36 +436,7 @@ class Lora():
         # 5.3. Optimizer Config
 
         optimizer_args = ""  # @param {'type':'string'}
-        network_category = "LoRA"  # @param ["LoRA", "LoCon", "LoCon_Lycoris", "LoHa"]
-
-        # @markdown Recommended values:
-
-        # @markdown | network_category | network_dim | network_alpha | conv_dim | conv_alpha |
-        # @markdown | :---: | :---: | :---: | :---: | :---: |
-        # @markdown | LoRA | 32 | 1 | - | - |
-        # @markdown | LoCon | 16 | 8 | 8 | 1 |
-        # @markdown | LoHa | 8 | 4 | 4 | 1 |
-
-        # @markdown - Currently, `dropout` and `cp_decomposition` is not available in this notebook.
-
-        # @markdown `conv_dim` and `conv_alpha` are needed to train `LoCon` and `LoHa`, skip it if you train normal `LoRA`. But remember, when in doubt, set `dim = alpha`.
-        conv_dim = 32  # @param {'type':'number'}
-        conv_alpha = 16  # @param {'type':'number'}
-        # @markdown It's recommended to not set `network_dim` and `network_alpha` higher than `64`, especially for LoHa.
-        # @markdown But if you want to train with higher dim/alpha so badly, try using higher learning rate. Because the model learning faster in higher dim.
-
-        # @markdown You can specify this field for resume training.
-        network_weight = ""  # @param {'type':'string'}
-        network_module = "lycoris.kohya" if network_category in ["LoHa", "LoCon_Lycoris"] else "networks.lora"
-        network_args = "" if network_category == "LoRA" else [
-            f"conv_dim={conv_dim}", f"conv_alpha={conv_alpha}",
-            ]
-
-        if network_category == "LoHa":
-            network_args.append("algo=loha")
-        elif network_category == "LoCon_Lycoris":
-            network_args.append("algo=lora")
-
+        stop_train_text_encoder = -1 #@param {'type':'number'}
 
 
         # @title ## 5.4. Training Config
@@ -521,72 +452,58 @@ class Lora():
                 "pretrained_model_name_or_path": self.sd_path,
                 "vae": self.vae_path,
             },
-            "additional_network_arguments": {
-                    "no_metadata": False,
-                    "unet_lr": float(self.unet_lr) if self.train_unet else None,
-                    "text_encoder_lr": float(self.text_encoder_lr) if self.train_text_encoder else None,
-                    "network_weights": network_weight,
-                    "network_module": network_module,
-                    "network_dim": self.network_dim,
-                    "network_alpha": self.network_alpha,
-                    "network_args": network_args,
-                    "network_train_unet_only": True if self.train_unet and not self.train_text_encoder else False,
-                    "network_train_text_encoder_only": True if self.train_text_encoder and not self.train_unet else False,
-                    "training_comment": None,
-                },
-                "optimizer_arguments": {
-                    "optimizer_type": self.optimizer_type,
-                    "learning_rate": self.unet_lr,
-                    "max_grad_norm": 1.0,
-                    "optimizer_args": eval(optimizer_args) if optimizer_args else None,
-                    "lr_scheduler": self.lr_scheduler,
-                    "lr_warmup_steps": lr_warmup_steps,
-                    "lr_scheduler_num_cycles": lr_scheduler_num_cycles if self.lr_scheduler == "cosine_with_restarts" else None,
-                    "lr_scheduler_power": lr_scheduler_power if self.lr_scheduler == "polynomial" else None,
-                },
-                "dataset_arguments": {
-                    "cache_latents": True,
-                    "debug_dataset": False,
-                },
-                "training_arguments": {
-                    "output_dir": self.save_model_dir,
-                    "output_name": self.project_name,
-                    "save_precision": save_precision,
-                    "save_every_n_epochs": save_n_epochs_type_value if save_n_epochs_type == "save_every_n_epochs" else None,
-                    "save_n_epoch_ratio": save_n_epochs_type_value if save_n_epochs_type == "save_n_epoch_ratio" else None,
-                    "save_last_n_epochs": None,
-                    "save_state": None,
-                    "save_last_n_epochs_state": None,
-                    "resume": None,
-                    "train_batch_size": self.train_batch_size,
-                    "max_token_length": 225,
-                    "mem_eff_attn": False,
-                    "xformers": False,
-                    "max_train_epochs": self.num_epochs,
-                    "max_data_loader_n_workers": 8,
-                    "persistent_data_loader_workers": True,
-                    "seed": seed if seed > 0 else None,
-                    "gradient_checkpointing": gradient_checkpointing,
-                    "gradient_accumulation_steps": gradient_accumulation_steps,
-                    "mixed_precision": mixed_precision,
-                    "logging_dir": self.logging_dir,
-                    "log_prefix": self.project_name,
-                    "noise_offset": noise_offset if noise_offset > 0 else None,
-                    "lowram": self.lowram,
-                    "clip_skip": self.clip_skip,
-                },
-                "sample_prompt_arguments": {
-                    "sample_dir": self.sample_dir,
-                    "sample_every_n_steps": None,
-                    "sample_every_n_epochs": 1 if enable_sample_prompt else 999999,
-                    "sample_sampler": sampler,
-                    # "images_per_prompt": images_per_prompt,
-                },
-                "dreambooth_arguments": {
-                    "prior_loss_weight": self.prior_loss_weight,
-                },
-                "saving_arguments": {"save_model_as": save_model_as},
-            }
+            "optimizer_arguments": {
+                "optimizer_type": self.optimizer_type,
+                "learning_rate": self.learning_rate,
+                "max_grad_norm": 1.0,
+                "stop_train_text_encoder": stop_train_text_encoder if stop_train_text_encoder > 0 else None,
+                "optimizer_args": eval(optimizer_args) if optimizer_args else None,
+                "lr_scheduler": self.lr_scheduler,
+                "lr_warmup_steps": lr_warmup_steps,
+                "lr_scheduler_num_cycles": lr_scheduler_num_cycles if self.lr_scheduler == "cosine_with_restarts" else None,
+                "lr_scheduler_power": lr_scheduler_power if self.lr_scheduler == "polynomial" else None,
+            },
+            "dataset_arguments": {
+                "cache_latents": True,
+                "debug_dataset": False,
+            },
+            "training_arguments": {
+                "output_dir": self.save_model_dir,
+                "output_name": self.project_name,
+                "save_precision": save_precision,
+                "save_every_n_epochs": None,
+                "save_n_epoch_ratio": self.save_n_epoch_ratio,
+                "save_last_n_epochs": None,
+                "save_state": save_state,
+                "save_last_n_epochs_state": None,
+                "resume": self.resume_path if self.resume_path else None,
+                "train_batch_size": self.train_batch_size,
+                "max_token_length": 225,
+                "mem_eff_attn": False,
+                "xformers": False,
+                "max_train_steps": self.max_train_steps,
+                "max_data_loader_n_workers": 8,
+                "persistent_data_loader_workers": True,
+                "seed": seed if seed > 0 else None,
+                "gradient_checkpointing": gradient_checkpointing,
+                "gradient_accumulation_steps": gradient_accumulation_steps,
+                "mixed_precision": mixed_precision,
+                "clip_skip": self.clip_skip if not self.v2 else None,
+                "logging_dir": self.logging_dir,
+                "log_prefix": self.project_name,
+                "noise_offset": noise_offset if noise_offset > 0 else None,
+            },
+            "sample_prompt_arguments": {
+                "sample_dir": self.sample_dir,
+                "sample_every_n_steps": self.sample_every_n_steps if enable_sample_prompt else 999999,
+                "sample_every_n_epochs": None,
+                "sample_sampler": sampler,
+            },
+            "dreambooth_arguments": {
+                "prior_loss_weight": self.prior_loss_weight,
+            },
+            "saving_arguments": {"save_model_as": save_model_as},
+        }
 
         config_path = os.path.join(self.config_dir, "config_file.toml")
         prompt_path = os.path.join(self.config_dir, "sample_prompt.txt")
@@ -610,9 +527,8 @@ class Lora():
         final_prompts = []
         for prompt in self.prompts:
             final_prompts.append(
-            f"{self.instance_token}, {pre}, {prompt} --n {negative} --w {width} --h {height} --l {scale} --s {steps}"
-            if self.add_token_to_caption
-            else f"{pre}, {prompt} --n {negative} --w {width} --h {height} --l {scale} --s {steps}"
+            # f"{self.instance_token}, {pre}, {prompt} --n {negative} --w {width} --h {height} --l {scale} --s {steps}"
+                f"{pre}, {prompt} --n {negative} --w {width} --h {height} --l {scale} --s {steps}"
             )
         with open(prompt_path, 'w') as file:
             # Write each string to the file on a new line
