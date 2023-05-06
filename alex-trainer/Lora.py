@@ -39,7 +39,11 @@ class Lora():
         self.optimizer_type = kwargs.get("optimizer_type", "DAdaptation")
         self.prior_loss_weight = kwargs.get("prior_loss_weight", 1.0)
         self.resolution = kwargs.get("resolution", 512)
-        self.save_n_epochs_type_value = kwargs.get("save_n_epochs_type_value", 1)
+        self.save_every_n_epochs = kwargs.get("save_every_n_epochs", 1)
+
+        self.save_n_epochs_ratio =  kwargs.get("save_n_epochs_ratio", 1.0)
+        self.train_batch_size = kwargs.get("train_batch_size", 4)
+        self.lr_scheduler = kwargs.get("lr_scheduler", "polynomial")
 
         self.project_name = self.dir_name
         self.vae_path = "/root/autodl-tmp/webui_models/VAE/vae-ft-mse-840000-ema-pruned.safetensors"
@@ -51,10 +55,7 @@ class Lora():
         self.clip_skip = 1
         self.keep_tokens = 0 
         self.caption_extension = ".txt"
-
-        self.train_batch_size = 4
         self.lowram = False
-        self.lr_scheduler = "polynomial"  #@param ["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "adafactor"]
 
         self.root_dir = "/root/alex-trainer"
         self.output_dir = "/root/autodl-tmp/training-outputs"
@@ -345,15 +346,12 @@ class Lora():
                     else:
                         delete_tag(file_path, tag)  
 
-    def train(self,
-    ):
+    def train(self):
         
         lr_scheduler_num_cycles = 0  # @param {'type':'number'}
         lr_scheduler_power = 1 
         lr_warmup_steps = 0 
         noise_offset = 0.0  # @param {type:"number"}
-
-        save_n_epochs_type = "save_n_epoch_ratio"  # @param ["save_every_n_epochs", "save_n_epoch_ratio"]
 
         # sample 
         enable_sample_prompt = True
@@ -364,7 +362,7 @@ class Lora():
         width = 512  # @param {type: "integer"}
         height = 512  # @param {type: "integer"}
         pre = "masterpiece, best quality" 
-        negative = "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry"  
+        negative = "lowres, blurry"  
 
         # 
         mixed_precision = "fp16"  # @param ["no","fp16","bf16"]
@@ -514,8 +512,8 @@ class Lora():
                     "output_dir": self.save_model_dir,
                     "output_name": self.project_name,
                     "save_precision": save_precision,
-                    "save_every_n_epochs": self.save_n_epochs_type_value if save_n_epochs_type == "save_every_n_epochs" else None,
-                    "save_n_epoch_ratio": self.save_n_epochs_type_value if save_n_epochs_type == "save_n_epoch_ratio" else None,
+                    "save_every_n_epochs": self.save_every_n_epochs if self.save_every_n_epochs else None,
+                    "save_n_epoch_ratio": self.save_n_epochs_ratio if self.save_n_epochs_ratio else None,
                     "save_last_n_epochs": None,
                     "save_state": None,
                     "save_last_n_epochs_state": None,
@@ -589,7 +587,7 @@ class Lora():
         dataset_config = os.path.join(self.config_dir, "dataset_config.toml")
         
         os.chdir(self.repo_dir)
-        command = f'''accelerate launch --config_file={self.accelerate_config} --num_cpu_threads_per_process=1 train_db.py --sample_prompts={sample_prompt} --dataset_config={dataset_config} --config_file={config_file}'''
+        command = f'''accelerate launch --config_file={self.accelerate_config} --num_cpu_threads_per_process=1 train_network.py --sample_prompts={sample_prompt} --dataset_config={dataset_config} --config_file={config_file}'''
 
         subprocess.run(command, shell=True, check=True)
 

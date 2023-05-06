@@ -36,6 +36,9 @@ class Dreambooth():
         self.learning_rate = kwargs.get("learning_rate", 1)
         self.prior_loss_weight = kwargs.get("prior_loss_weight", 1)
         self.resolution = kwargs.get("resolution", 512)
+        self.train_batch_size = kwargs.get("train_batch_size", 1)
+        self.lr_scheduler = kwargs.get("lr_scheduler", "polynomial")
+
 
         self.project_name = self.dir_name
         self.vae_path = "/root/autodl-tmp/webui_models/VAE/vae-ft-mse-840000-ema-pruned.safetensors"
@@ -47,10 +50,6 @@ class Dreambooth():
         self.clip_skip = 1 
         self.keep_tokens = 0
         self.caption_extension = ".txt"
-
-
-        self.train_batch_size = 1
-        self.lr_scheduler = "polynomial"  #@param ["linear", "cosine", "cosine_with_restarts", "polynomial", "constant", "constant_with_warmup", "adafactor"]
 
         self.root_dir = "/root/alex-trainer"
         self.output_dir = "/root/autodl-tmp/training-outputs"
@@ -344,8 +343,7 @@ class Dreambooth():
                     else:
                         delete_tag(file_path, tag)
 
-    def train(self,
-    ):
+    def train(self):
         
         lr_scheduler_num_cycles = 0  # @param {'type':'number'}
         lr_scheduler_power = 1 
@@ -361,7 +359,7 @@ class Dreambooth():
         width = 512  # @param {type: "integer"}
         height = 512  # @param {type: "integer"}
         pre = "masterpiece, best quality" 
-        negative = "lowres, bad anatomy, bad hands, text, error, missing fingers, extra digit, fewer digits, cropped, worst quality, low quality, normal quality, jpeg artifacts, signature, watermark, username, blurry"  
+        negative = "lowres, blurry"  
 
         # 
         mixed_precision = "fp16"  # @param ["no","fp16","bf16"]
