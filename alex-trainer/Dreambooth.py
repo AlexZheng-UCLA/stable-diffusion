@@ -41,6 +41,9 @@ class Dreambooth():
 
 
         self.project_name = self.dir_name
+        elf.root_dir = "/root/alex-trainer"
+        self.output_dir = "/root/autodl-tmp/training-outputs"
+        self.save_model_dir = "/root/autodl-fs/webui_models/Stable-diffusion"
         self.vae_path = "/root/autodl-tmp/webui_models/VAE/vae-ft-mse-840000-ema-pruned.safetensors"
         self.blip_path = "/root/autodl-tmp/webui_models/BLIP/model_large_caption.pth"
 
@@ -50,10 +53,6 @@ class Dreambooth():
         self.clip_skip = 1 
         self.keep_tokens = 0
         self.caption_extension = ".txt"
-
-        self.root_dir = "/root/alex-trainer"
-        self.output_dir = "/root/autodl-tmp/training-outputs"
-        self.save_model_dir = "/root/autodl-fs/webui_models/Stable-diffusion"
         self.v_parameterization = False
 
         self.caption_dropout_rate = 0

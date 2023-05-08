@@ -15,7 +15,7 @@ configs = [
         "num_epochs": 1,
         "network_dim": 128,
         "network_alpha": 64,
-        "train_batch_size": 4,
+        "train_batch_size": 1,
         "optimizer_type": "AdaFactor", # @param ["AdamW", "AdamW8bit", "Lion", "DAdaptation", "AdaFactor", "SGDNesterov", "SGDNesterov8bit"]
         "unet_lr": 1e-5,
         "text_encoder_lr": 0.5e-5,
@@ -30,25 +30,25 @@ configs = [
 
     },
 
-    ## minimal input
-    {
-        "dir_name": "chenweiting-512-10-Ada-hassan",
-        "data_name": "chenweiting/chenweiting-512",
-        "instance_token": "chenweiting man", 
-        "class_token": "man",
-        "train_repeats": 10,
-        "reg_repeats": 1,
-        "prompts": [
-            "1 chenweiting man in white shirt",
-            "1 chenweiting man in black jacket",
-        ],
+    # ## minimal input
+    # {
+    #     "dir_name": "chenweiting-512-10-Ada-hassan",
+    #     "data_name": "chenweiting/chenweiting-512",
+    #     "instance_token": "chenweiting man", 
+    #     "class_token": "man",
+    #     "train_repeats": 10,
+    #     "reg_repeats": 1,
+    #     "prompts": [
+    #         "1 chenweiting man in white shirt",
+    #         "1 chenweiting man in black jacket",
+    #     ],
 
-    },
+    # },
 ] 
 
 for config in configs:
     model = Lora(**config)
 
-    # model.prepare(data_anotation = "blip")  # @param ["none", "waifu", "blip", "combined"]
+    model.prepare(data_anotation = "blip")  # @param ["none", "waifu", "blip", "combined"]
     
     model.train()

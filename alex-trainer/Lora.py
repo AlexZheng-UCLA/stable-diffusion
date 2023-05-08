@@ -20,7 +20,7 @@ class Lora():
         
         self.dir_name = kwargs.get("dir_name", "default")
         self.data_name = kwargs.get("data_name", "")
-        self.sd_path = kwargs.get("sd_path", "/root/autodl-fs/webui_models/Stable-diffusion/v1-5-pruned-emaonly.safetensors")
+        self.sd_path = kwargs.get("sd_path", "/root/autodl-tmp/webui_models/Stable-diffusion/v1-5-pruned-emaonly.safetensors")
         self.resume_path = kwargs.get("resume_path", "")
         self.v2 = kwargs.get("v2", False)
         self.instance_token = kwargs.get("instance_token", "")
@@ -35,17 +35,19 @@ class Lora():
         self.unet_lr = kwargs.get("unet_lr", 1)
         self.text_encoder_lr = kwargs.get("text_encoder_lr", 0.5)
         self.prompts = kwargs.get("prompts", None)
-        self.images_per_prompt = kwargs.get("images_per_prompt")
+        self.images_per_prompt = kwargs.get("images_per_prompt", 1)
         self.optimizer_type = kwargs.get("optimizer_type", "DAdaptation")
         self.prior_loss_weight = kwargs.get("prior_loss_weight", 1.0)
         self.resolution = kwargs.get("resolution", 512)
-        self.save_every_n_epochs = kwargs.get("save_every_n_epochs", 1)
-
-        self.save_n_epochs_ratio =  kwargs.get("save_n_epochs_ratio", 1.0)
+        self.save_every_n_epochs = kwargs.get("save_every_n_epochs")
+        self.save_n_epochs_ratio =  kwargs.get("save_n_epochs_ratio")
         self.train_batch_size = kwargs.get("train_batch_size", 4)
         self.lr_scheduler = kwargs.get("lr_scheduler", "polynomial")
 
         self.project_name = self.dir_name
+        self.root_dir = "/root/alex-trainer"
+        self.output_dir = "/root/autodl-tmp/training-outputs"
+        self.save_model_dir = "/root/autodl-fs/webui_models/Lora"
         self.vae_path = "/root/autodl-tmp/webui_models/VAE/vae-ft-mse-840000-ema-pruned.safetensors"
         self.blip_path = "/root/autodl-tmp/webui_models/BLIP/model_large_caption.pth"
 
@@ -56,10 +58,6 @@ class Lora():
         self.keep_tokens = 0 
         self.caption_extension = ".txt"
         self.lowram = False
-
-        self.root_dir = "/root/alex-trainer"
-        self.output_dir = "/root/autodl-tmp/training-outputs"
-        self.save_model_dir = "/root/autodl-fs/webui_models/Lora"
         self.v_parameterization = False
 
         self.caption_dropout_rate = 0
